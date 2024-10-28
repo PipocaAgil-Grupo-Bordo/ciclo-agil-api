@@ -95,11 +95,11 @@ export class MenstrualPeriodService {
             } else {
                 menstrualPeriodId = closestPreviousPeriod.id;
 
-                const closestPreviousPeriodDate = this.toLocalDate(
+                const closestPeriodDate = this.toLocalDate(
                     new Date(closestPreviousPeriod.lastDate),
                 );
 
-                const differenceInTime = bodyDate.getTime() - closestPreviousPeriodDate.getTime();
+                const differenceInTime = bodyDate.getTime() - closestPeriodDate.getTime();
                 const differenceInDays = differenceInTime / (1000 * 3600 * 24);
 
                 if (differenceInDays > 3) {
@@ -139,6 +139,14 @@ export class MenstrualPeriodService {
 
     toLocalDate(date: Date) {
         return new Date(date.getTime() + date.getTimezoneOffset() * 60000);
+    }
+
+    differenceDate(dateFirst: MenstrualPeriod, dateSecond: MenstrualPeriod) {
+        const date1 = new Date(dateFirst.startedAt);
+        const date2 = new Date(dateSecond.startedAt);
+        const timeDiff = Math.abs(date2.getTime() - date1.getTime());
+        const diffDays = Math.ceil(timeDiff / (1000 * 3600 * 24));
+        return diffDays;
     }
 
     async deleteDate(id: number, userId: number) {
