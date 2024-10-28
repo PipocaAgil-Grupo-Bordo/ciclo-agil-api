@@ -5,6 +5,7 @@ import {
     CustomForbiddenException,
     CustomNotFoundException,
 } from '../../shared/exceptions/http-exception';
+import { ProfileRepository } from '../profile/profile.repository';
 import { CreateMenstrualPeriodDateDto } from './dtos/create-menstrual-date.dto';
 import { CreateMenstrualPeriodDto } from './dtos/create-menstrual-period.dto';
 import { MenstrualPeriod } from './entities/menstrual-period.entity';
@@ -16,6 +17,7 @@ export class MenstrualPeriodService {
     constructor(
         private menstrualPeriodRepository: MenstrualPeriodRepository,
         private menstrualPeriodDateRepository: MenstrualPeriodDateRepository,
+        private profileRepository: ProfileRepository,
     ) {}
 
     async create(body: CreateMenstrualPeriodDto, userId: number) {
@@ -23,8 +25,13 @@ export class MenstrualPeriodService {
         return this.menstrualPeriodRepository.save(menstrualPeriod);
     }
 
-    async getByDate(userId: number, year: string, month?: string) {
-        return this.menstrualPeriodRepository.getMenstrualPeriods(userId, year, month);
+    async getByDate(userId: number, year?: string, month?: string) {
+        const menstrualPeriod = {
+            period: await this.menstrualPeriodRepository.getMenstrualPeriods(userId, year, month),
+            predict: await this.getProfile(userId),
+        };
+
+        return menstrualPeriod;
     }
 
     async getLastByUserId(userId: number): Promise<MenstrualPeriod | undefined> {
@@ -95,11 +102,11 @@ export class MenstrualPeriodService {
             } else {
                 menstrualPeriodId = closestPreviousPeriod.id;
 
-                const closestPreviousPeriodDate = this.toLocalDate(
+                const closestPeriodDate = this.toLocalDate(
                     new Date(closestPreviousPeriod.lastDate),
                 );
 
-                const differenceInTime = bodyDate.getTime() - closestPreviousPeriodDate.getTime();
+                const differenceInTime = bodyDate.getTime() - closestPeriodDate.getTime();
                 const differenceInDays = differenceInTime / (1000 * 3600 * 24);
 
                 if (differenceInDays > 3) {
@@ -141,6 +148,15 @@ export class MenstrualPeriodService {
         return new Date(date.getTime() + date.getTimezoneOffset() * 60000);
     }
 
+
+    differenceDate(dateFirst: MenstrualPeriod, dateSecond: MenstrualPeriod) {
+        const date1 = new Date(dateFirst.startedAt);
+        const date2 = new Date(dateSecond.startedAt);
+        const timeDiff = Math.abs(date2.getTime() - date1.getTime());
+        const diffDays = Math.ceil(timeDiff / (1000 * 3600 * 24));
+        return diffDays;
+    }
+
     async deleteDate(id: number, userId: number) {
         const existsDate = await this.menstrualPeriodDateRepository.findOneBy({
             id,
@@ -169,5 +185,53 @@ export class MenstrualPeriodService {
         return {
             code: 'success',
         };
+    }
+
+    async getProfile(id: number) {
+        const regularMenstrual = await this.profileRepository.findBy({ id: id });
+        if (regularMenstrual[0].isMenstrualCycleRegular) {
+            if (regularMenstrual[0].menstrualCycleDuration == null) {
+                const getMenstrualDatePeriod = await this.menstrualPeriodRepository.find();
+                const predict: Date = new Date(
+                    getMenstrualDatePeriod[getMenstrualDatePeriod.length - 1].startedAt,
+                );
+                predict.setDate(predict.getDate() + 28);
+                return predict.toISOString().split('T')[0];
+            }
+            const getMenstrualDatePeriod = await this.menstrualPeriodRepository.find();
+            const predict: Date = new Date(
+                getMenstrualDatePeriod[getMenstrualDatePeriod.length - 1].startedAt,
+            );
+            predict.setDate(predict.getDate() + regularMenstrual[0].menstrualCycleDuration);
+            return predict.toISOString().split('T')[0];
+        } else {
+            const getMenstrualDatePeriod = await this.menstrualPeriodRepository.find();
+            if (getMenstrualDatePeriod.length < 2) {
+                throw new CustomNotFoundException({
+                    code: 'not-data',
+                    message: 'not there is data enough',
+                });
+            }
+
+            const cycle1 = this.differenceDate(
+                getMenstrualDatePeriod[getMenstrualDatePeriod.length - 4],
+                getMenstrualDatePeriod[getMenstrualDatePeriod.length - 3],
+            );
+            const cycle2 = this.differenceDate(
+                getMenstrualDatePeriod[getMenstrualDatePeriod.length - 3],
+                getMenstrualDatePeriod[getMenstrualDatePeriod.length - 2],
+            );
+            const cycle3 = this.differenceDate(
+                getMenstrualDatePeriod[getMenstrualDatePeriod.length - 2],
+                getMenstrualDatePeriod[getMenstrualDatePeriod.length - 1],
+            );
+            const predict: Date = new Date(
+                getMenstrualDatePeriod[getMenstrualDatePeriod.length - 1].startedAt,
+            );
+
+            const avaregeDaysCycle = (cycle1 + cycle2 + cycle3) / 3;
+            predict.setDate(predict.getDate() + Math.ceil(avaregeDaysCycle));
+            return predict.toISOString().split('T')[0];
+        }
     }
 }
