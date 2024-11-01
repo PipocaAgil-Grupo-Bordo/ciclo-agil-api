@@ -27,6 +27,7 @@ describe('UserController', () => {
         try {
             await queryRunner.query('SET CONSTRAINTS ALL DEFERRED');
             await queryRunner.query('TRUNCATE TABLE "menstrual_period" CASCADE');
+            await queryRunner.query('TRUNCATE TABLE "user" CASCADE');
             await queryRunner.commitTransaction();
         } catch (err) {
             await queryRunner.rollbackTransaction();
