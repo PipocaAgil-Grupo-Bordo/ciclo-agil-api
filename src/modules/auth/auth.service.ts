@@ -67,9 +67,16 @@ export class AuthService {
             });
         }
 
-        const {
-            sub: { userId, email },
-        } = this.tokenService.decode(accessToken);
+        const decodeResponse = this.tokenService.decode(accessToken);
+
+        if(!decodeResponse || !decodeResponse.sub) {
+            throw new CustomForbiddenException({
+                code: 'invalid-refresh-token',
+                message: 'Invalid refresh token',
+            });
+        }
+
+        const { userId, email } = decodeResponse.sub;
 
         if (!userId) {
             throw new CustomForbiddenException({
