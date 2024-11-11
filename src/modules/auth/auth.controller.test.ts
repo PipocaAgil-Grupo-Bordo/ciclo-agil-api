@@ -28,7 +28,7 @@ describe('AuthController', () => {
         await queryRunner.startTransaction();
         try {
             await queryRunner.query('SET CONSTRAINTS ALL DEFERRED');
-            await queryRunner.query('TRUNCATE TABLE "menstrual_period" CASCADE');
+            await queryRunner.query('TRUNCATE TABLE "user" CASCADE');
             await queryRunner.commitTransaction();
         } catch (err) {
             await queryRunner.rollbackTransaction();
@@ -234,25 +234,6 @@ describe('AuthController', () => {
             });
     });
 
-    it('should be reset password', async () => {
-        await request(app.getHttpServer())
-            .post('/auth/login')
-            .send({
-                password: testUser.password,
-                email: testUser.email,
-            })
-            .expect(HttpStatus.CREATED)
-            .then(async (result) => {
-                await request(app.getHttpServer())
-                    .patch('/auth/reset-password')
-                    .set('Authorization', `Bearer ${result.body.token.accessToken}`)
-                    .send({
-                        password: 'Ta_123ads',
-                    })
-                    .expect(HttpStatus.OK);
-            });
-    });
-
     it('should not be reset with email undefined', async () => {
         await request(app.getHttpServer())
             .post('/auth/reset-password/request')
@@ -301,7 +282,7 @@ describe('AuthController', () => {
             });
     });
 
-    it('should validate the code by email undefined', async () => {
+    it('should not validate the code by email undefined', async () => {
         await request(app.getHttpServer())
             .post('/auth/reset-password/request')
             .send({
@@ -318,7 +299,7 @@ describe('AuthController', () => {
                         email: undefined,
                         code: verificationCode,
                     })
-                    .expect(HttpStatus.CREATED);
+                    .expect(HttpStatus.BAD_REQUEST);
             });
     });
 
@@ -339,7 +320,7 @@ describe('AuthController', () => {
                         email: testUser.email,
                         code: undefined,
                     })
-                    .expect(HttpStatus.CREATED);
+                    .expect(HttpStatus.BAD_REQUEST);
             });
     });
 
@@ -352,6 +333,7 @@ describe('AuthController', () => {
             })
             .expect(HttpStatus.CREATED)
             .then(async (result) => {
+                await new Promise((resolve) => setTimeout(resolve, 3000));
                 await request(app.getHttpServer())
                     .post('/auth/refresh-token')
                     .send({
@@ -359,8 +341,27 @@ describe('AuthController', () => {
                     })
                     .expect(HttpStatus.CREATED)
                     .then((res) => {
-                        expect(res.body.accessToken).not.toBe(result.body.token.refreshToken);
+                        expect(res.body.accessToken).not.toBe(result.body.token.accessToken);
                     });
+            });
+    });
+
+    it('should be reset password', async () => {
+        await request(app.getHttpServer())
+            .post('/auth/login')
+            .send({
+                password: testUser.password,
+                email: testUser.email,
+            })
+            .expect(HttpStatus.CREATED)
+            .then(async (result) => {
+                await request(app.getHttpServer())
+                    .patch('/auth/reset-password')
+                    .set('Authorization', `Bearer ${result.body.token.accessToken}`)
+                    .send({
+                        password: 'Ta_123ads',
+                    })
+                    .expect(HttpStatus.OK);
             });
     });
 });
