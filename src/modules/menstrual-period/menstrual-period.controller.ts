@@ -37,6 +37,15 @@ export class MenstrualPeriodController {
         return this.menstrualPeriodService.getByDate(user.id, year, month);
     }
 
+    @Get('forecasting')
+    @UseGuards(AuthGuard('jwt'))
+    async getForecasting(
+        @Request() req: any,
+    ) {
+        const user = req.user;
+        return this.menstrualPeriodService.getForecasting(user.id);
+    }
+
     @Get('last')
     @UseGuards(AuthGuard('jwt'))
     async getLastMenstrualPeriod(@Request() req: any) {
