@@ -1,0 +1,42 @@
+services:
+  db:
+    image: postgres:17-alpine
+    restart: always
+    shm_size: 128mb
+    environment:
+      POSTGRES_USER: pipocaagil
+      POSTGRES_PASSWORD: pipocaagil
+      POSTGRES_DB: pipocaagil
+    container_name: postgres
+    volumes:
+      - ./data:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: app
+    command: >
+      sh -c "npm run migration:run && npm run dev"
+    environment:
+      - PORT=4444
+    ports:
+      - 4444:4444
+    depends_on:
+      - db
+    volumes:
+      - ./src:/app/src
+
+  pgadmin:
+    image: dpage/pgadmin4
+    restart: always
+    container_name: pgadmin
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=pipocaagil@pipocaagil.com.br
+      - PGADMIN_DEFAULT_PASSWORD=pipocaagil
+    ports:
+      - 5050:80
+    depends_on:
+      - db
