@@ -9,7 +9,7 @@ import { AuthModule } from '../auth/auth.module';
 import { User } from '../user/entities/user.entity';
 import { MenstrualPeriodModule } from './menstrual-period.module';
 
-describe('UserController', () => {
+describe('MenstrualPeriodController', () => {
     let app: INestApplication;
     let dataSource: DataSource;
 
