@@ -4,14 +4,14 @@ services:
     restart: always
     shm_size: 128mb
     environment:
-      POSTGRES_USER: pipocaagil
-      POSTGRES_PASSWORD: pipocaagil
-      POSTGRES_DB: pipocaagil
+      POSTGRES_USER: cicloagil
+      POSTGRES_PASSWORD: cicloagil
+      POSTGRES_DB: cicloagil
     container_name: postgres
     volumes:
       - ./data:/var/lib/postgresql/data
     ports:
-      - 5432:5432
+      - 5433:5432
 
   app:
     build:
@@ -22,6 +22,7 @@ services:
       sh -c "npm run migration:run && npm run dev"
     environment:
       - PORT=4444
+      - POSTGRES_URL=postgres://cicloagil:cicloagil@db:5432/cicloagil
     ports:
       - 4444:4444
     depends_on:
@@ -34,8 +35,8 @@ services:
     restart: always
     container_name: pgadmin
     environment:
-      - PGADMIN_DEFAULT_EMAIL=pipocaagil@pipocaagil.com.br
-      - PGADMIN_DEFAULT_PASSWORD=pipocaagil
+      - PGADMIN_DEFAULT_EMAIL=cicloagil@cicloagil.com.br
+      - PGADMIN_DEFAULT_PASSWORD=cicloagil
     ports:
       - 5050:80
     depends_on:
