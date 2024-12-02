@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { parseISO } from 'date-fns';
+import { DateTime } from 'luxon';
 import {
     CustomConflictException,
     CustomForbiddenException,
@@ -145,15 +146,6 @@ export class MenstrualPeriodService {
         return new Date(date.getTime() + date.getTimezoneOffset() * 60000);
     }
 
-
-    differenceDate(dateFirst: MenstrualPeriod, dateSecond: MenstrualPeriod) {
-        const date1 = new Date(dateFirst.startedAt);
-        const date2 = new Date(dateSecond.startedAt);
-        const timeDiff = Math.abs(date2.getTime() - date1.getTime());
-        const diffDays = Math.ceil(timeDiff / (1000 * 3600 * 24));
-        return diffDays;
-    }
-
     async deleteDate(id: number, userId: number) {
         const existsDate = await this.menstrualPeriodDateRepository.findOneBy({
             id,
@@ -184,53 +176,126 @@ export class MenstrualPeriodService {
         };
     }
 
+    async resolveCycleDuration(
+        menstrualCycleDuration: number,
+        menstrualPerioDates: Date[],
+        isMenstrualCycleRegular: boolean,
+    ) {
+        const defaultCycle = 28;
+        if (isMenstrualCycleRegular) {
+            if (menstrualCycleDuration === null) {
+                return defaultCycle;
+            } else {
+                return menstrualCycleDuration;
+            }
+        }
+        if (menstrualPerioDates.length === 1) {
+            throw new CustomNotFoundException({
+                code: 'not-data-enough',
+                message: 'not there is data enough',
+            });
+        }
+
+        if (menstrualPerioDates.length === 2) {
+            const fistDate = DateTime.fromISO(menstrualPerioDates[0].toString());
+            const secondDate = DateTime.fromISO(menstrualPerioDates[1].toString());
+
+            const differenceDate = fistDate.diff(secondDate);
+
+            return (differenceDate.days + defaultCycle + defaultCycle) / 3;
+        }
+
+        if (menstrualPerioDates.length === 3) {
+            const fistDate = DateTime.fromISO(menstrualPerioDates[0].toString());
+            const secondDate = DateTime.fromISO(menstrualPerioDates[1].toString());
+            const thirdDate = DateTime.fromISO(menstrualPerioDates[2].toString());
+
+            const differenceDateFirst = fistDate.diff(secondDate, ['days']);
+            const differenceDateSecond = secondDate.diff(thirdDate, ['days']);
+
+            return (differenceDateFirst.days + differenceDateSecond.days + defaultCycle) / 3;
+        }
+        const fistDate = DateTime.fromISO(menstrualPerioDates[0].toString());
+        const secondDate = DateTime.fromISO(menstrualPerioDates[1].toString());
+        const thirdDate = DateTime.fromISO(menstrualPerioDates[2].toString());
+        const fourthDate = DateTime.fromISO(menstrualPerioDates[3].toString());
+
+        const differenceDateFirst = fistDate.diff(secondDate, ['days']);
+        const differenceDateSecond = secondDate.diff(thirdDate, ['days']);
+        const differenceDateThird = thirdDate.diff(fourthDate, ['days']);
+
+        return (
+            (differenceDateFirst.days + differenceDateSecond.days + differenceDateThird.days) / 3
+        );
+    }
+
+    async resolveGetDatesPeriodMenstrualDatabase(userId: number, isMenstrualCycleRegular: boolean) {
+        if (isMenstrualCycleRegular) {
+            return await this.menstrualPeriodRepository.find({
+                where: {
+                    userId: userId,
+                },
+                order: {
+                    startedAt: 'DESC',
+                },
+                take: 1,
+            });
+        }
+        return await this.menstrualPeriodRepository.find({
+            where: {
+                userId: userId,
+            },
+            order: {
+                startedAt: 'DESC',
+            },
+            take: 4,
+        });
+    }
+
     async getForecasting(userId: number) {
-        
-        return {userId}
-        // const regularMenstrual = await this.profileRepository.findBy({ id: id });
-        // if (regularMenstrual[0]?.isMenstrualCycleRegular) {
-        //     if (regularMenstrual[0].menstrualCycleDuration == null) {
-        //         const getMenstrualDatePeriod = await this.menstrualPeriodRepository.find();
-        //         const predict: Date = new Date(
-        //             getMenstrualDatePeriod[getMenstrualDatePeriod.length - 1].startedAt,
-        //         );
-        //         predict.setDate(predict.getDate() + 28);
-        //         return predict.toISOString().split('T')[0];
-        //     }
-        //     const getMenstrualDatePeriod = await this.menstrualPeriodRepository.find();
-        //     const predict: Date = new Date(
-        //         getMenstrualDatePeriod[getMenstrualDatePeriod.length - 1].startedAt,
-        //     );
-        //     predict.setDate(predict.getDate() + regularMenstrual[0].menstrualCycleDuration);
-        //     return predict.toISOString().split('T')[0];
-        // } else {
-        //     const getMenstrualDatePeriod = await this.menstrualPeriodRepository.find({where: {userId: }});
-        //     if (getMenstrualDatePeriod.length < 2) {
-        //         throw new CustomNotFoundException({
-        //             code: 'not-data',
-        //             message: 'not there is data enough',
-        //         });
-        //     }
+        const profileUser = await this.profileRepository.findBy({ id: userId });
+        const menstrualPeriod = await this.resolveGetDatesPeriodMenstrualDatabase(
+            userId,
+            profileUser[0].isMenstrualCycleRegular,
+        );
+        const startedAtCollection = menstrualPeriod.map((menstrualPeriodInteration) => {
+            return menstrualPeriodInteration.startedAt;
+        });
+        if (profileUser[0].initialPeriodDate === null && startedAtCollection.length === 0) {
+            throw new CustomConflictException({
+                code: 'initial-period-date',
+                message: 'there is no date',
+            });
+        }
 
-        //     const cycle1 = this.differenceDate(
-        //         getMenstrualDatePeriod[getMenstrualDatePeriod.length - 4],
-        //         getMenstrualDatePeriod[getMenstrualDatePeriod.length - 3],
-        //     );
-        //     const cycle2 = this.differenceDate(
-        //         getMenstrualDatePeriod[getMenstrualDatePeriod.length - 3],
-        //         getMenstrualDatePeriod[getMenstrualDatePeriod.length - 2],
-        //     );
-        //     const cycle3 = this.differenceDate(
-        //         getMenstrualDatePeriod[getMenstrualDatePeriod.length - 2],
-        //         getMenstrualDatePeriod[getMenstrualDatePeriod.length - 1],
-        //     );
-        //     const predict: Date = new Date(
-        //         getMenstrualDatePeriod[getMenstrualDatePeriod.length - 1].startedAt,
-        //     );
+        if (startedAtCollection.length < 4 && profileUser[0].initialPeriodDate !== null) {
+            startedAtCollection.push(profileUser[0].initialPeriodDate);
+        }
 
-        //     const avaregeDaysCycle = (cycle1 + cycle2 + cycle3) / 3;
-        //     predict.setDate(predict.getDate() + Math.ceil(avaregeDaysCycle));
-        //     return predict.toISOString().split('T')[0];
-        // }
+        const durationCycle = Math.floor(
+            await this.resolveCycleDuration(
+                profileUser[0].menstrualCycleDuration,
+                startedAtCollection,
+                profileUser[0].isMenstrualCycleRegular,
+            ),
+        );
+
+        const datesForescastingOfYear = [];
+
+        for (let i = 0; i < 12; i++) {
+            datesForescastingOfYear.push(
+                DateTime.fromISO(startedAtCollection[0].toString())
+                    .plus({ days: durationCycle * i })
+                    .toFormat('yyyy-MM-dd'),
+            );
+        }
+
+        return {
+            events: {
+                periodMenstrual: {
+                    days: datesForescastingOfYear,
+                },
+            },
+        };
     }
 }
