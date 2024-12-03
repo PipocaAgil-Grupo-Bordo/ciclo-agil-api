@@ -67,9 +67,16 @@ export class AuthService {
             });
         }
 
-        const {
-            sub: { userId, email },
-        } = this.tokenService.decode(accessToken);
+        const decodeResponse = this.tokenService.decode(accessToken);
+
+        if(!decodeResponse || !decodeResponse.sub) {
+            throw new CustomForbiddenException({
+                code: 'invalid-refresh-token',
+                message: 'Invalid refresh token',
+            });
+        }
+
+        const { userId, email } = decodeResponse.sub;
 
         if (!userId) {
             throw new CustomForbiddenException({
@@ -92,9 +99,9 @@ export class AuthService {
         }
 
         const verificationCode = await this.verificationCodeService.generate();
-
-        await this.emailService.sendVerificationCode(user, verificationCode);
-
+        if (process.env.NODE_ENV !== 'test') {
+            await this.emailService.sendVerificationCode(user, verificationCode);
+        }
         await this.verificationCodeService.insert(verificationCode, email);
 
         return { message: `Verification code sent to ${email}` };

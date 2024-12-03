@@ -32,8 +32,10 @@ export class MenstrualPeriodRepository extends Repository<MenstrualPeriod> {
             return this.createQueryBuilder('menstrual_period')
                 .leftJoinAndSelect('menstrual_period.dates', 'dates')
                 .where('menstrual_period.userId = :userId', { userId })
-                .andWhere('EXTRACT(YEAR FROM menstrual_period.startedAt) = :year', { year })
-                .andWhere('EXTRACT(MONTH FROM menstrual_period.startedAt) = :month', { month })
+                .andWhere(
+                    '((EXTRACT(YEAR FROM menstrual_period.startedAt) = :year AND EXTRACT(MONTH FROM menstrual_period.startedAt) = :month) OR (EXTRACT(YEAR FROM menstrual_period.lastDate) = :year AND EXTRACT(MONTH FROM menstrual_period.lastDate) = :month))',
+                    { year, month },
+                )
                 .orderBy('menstrual_period.startedAt', 'ASC')
                 .addOrderBy('dates.date', 'ASC')
                 .getMany();
@@ -42,7 +44,10 @@ export class MenstrualPeriodRepository extends Repository<MenstrualPeriod> {
         return this.createQueryBuilder('menstrual_period')
             .leftJoinAndSelect('menstrual_period.dates', 'dates')
             .where('menstrual_period.userId = :userId', { userId })
-            .andWhere('EXTRACT(YEAR FROM menstrual_period.startedAt) = :year', { year })
+            .andWhere(
+                '(EXTRACT(YEAR FROM menstrual_period.startedAt) = :year OR EXTRACT(YEAR FROM menstrual_period.lastDate) = :year)',
+                { year },
+            )
             .orderBy('menstrual_period.startedAt', 'ASC')
             .addOrderBy('dates.date', 'ASC')
             .getMany();

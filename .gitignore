@@ -3,6 +3,9 @@
 /node_modules
 /build
 
+/data
+/test-data
+
 # Logs
 logs
 *.log
