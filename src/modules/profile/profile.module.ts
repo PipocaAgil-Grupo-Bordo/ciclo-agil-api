@@ -4,7 +4,7 @@ import { Profile } from './entities/profile.entity';
 import { ProfileController } from './profile.controller';
 import { ProfileRepository } from './profile.repository';
 import { ProfileService } from './profile.service';
-import { ProfileV2Controller } from './profilev2.controller';
+import { ProfileV2Controller } from './profile-v2.controller';
 
 @Module({
     imports: [TypeOrmModule.forFeature([Profile])],
