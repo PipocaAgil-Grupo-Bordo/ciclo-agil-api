@@ -3,7 +3,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { UpdateProfileDto } from './dtos/update-profile.dto';
 import { ProfileService } from './profile.service';
 
-@Controller('profile')
+@Controller('profiles')
 export class ProfileV2Controller {
     constructor(private readonly profileService: ProfileService) {}
 
