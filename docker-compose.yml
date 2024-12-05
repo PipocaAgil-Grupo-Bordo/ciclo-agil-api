@@ -7,11 +7,9 @@ services:
       POSTGRES_USER: cicloagil
       POSTGRES_PASSWORD: cicloagil
       POSTGRES_DB: cicloagil
-    container_name: postgres
     volumes:
-      - ./data:/var/lib/postgresql/data
-    ports:
-      - 5433:5432
+      - pg-data:/var/lib/postgresql/data
+    user: postgres
 
   app:
     build:
@@ -41,3 +39,6 @@ services:
       - 5050:80
     depends_on:
       - db
+
+volumes:
+  pg-data:
