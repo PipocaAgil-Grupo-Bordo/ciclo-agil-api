@@ -32,9 +32,7 @@ export class MenstrualPeriodController {
 
     @Get('forecasting')
     @UseGuards(AuthGuard('jwt'))
-    async getForecasting(
-        @Request() req: any,
-    ) {
+    async getForecasting(@Request() req: any) {
         const user = req.user;
         return this.menstrualPeriodService.getForecasting(user.id);
     }

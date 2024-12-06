@@ -6,6 +6,8 @@ import * as request from 'supertest';
 import { DataSource } from 'typeorm';
 import { DatabaseModule } from '../../database/database.module';
 import { AuthModule } from '../auth/auth.module';
+import { Profile } from '../profile/entities/profile.entity';
+import { ProfileModule } from '../profile/profile.module';
 import { User } from '../user/entities/user.entity';
 import { MenstrualPeriodModule } from './menstrual-period.module';
 
@@ -13,12 +15,15 @@ describe('MenstrualPeriodController', () => {
     let app: INestApplication;
     let dataSource: DataSource;
 
+    const now = DateTime.now();
+
     const testUser = {
         name: 'testuser',
         password: 'testpassword',
         email: 'testuser@example.com',
         birthday: '25/12/1995',
     };
+    let userResponse: User;
 
     const cleanDatabase = async () => {
         const queryRunner = dataSource.createQueryRunner();
@@ -27,6 +32,10 @@ describe('MenstrualPeriodController', () => {
         try {
             await queryRunner.query('SET CONSTRAINTS ALL DEFERRED');
             await queryRunner.query('TRUNCATE TABLE "menstrual_period" CASCADE');
+<<<<<<< HEAD
+=======
+            await queryRunner.query('TRUNCATE TABLE "profile" CASCADE');
+>>>>>>> 4a994b9 (integration test for cia-262)
             await queryRunner.query('TRUNCATE TABLE "user" CASCADE');
             await queryRunner.commitTransaction();
         } catch (err) {
@@ -43,11 +52,19 @@ describe('MenstrualPeriodController', () => {
         try {
             const hashedPassword = await hash(testUser.password, 10);
 
-            await queryRunner.manager.save(User, {
+            userResponse = await queryRunner.manager.save(User, {
                 ...testUser,
                 password: hashedPassword,
             });
 
+<<<<<<< HEAD
+=======
+            await queryRunner.manager.save(Profile, {
+                userId: userResponse.id,
+                initialPeriodDate: null,
+            });
+
+>>>>>>> 4a994b9 (integration test for cia-262)
             await queryRunner.commitTransaction();
         } catch (err) {
             await queryRunner.rollbackTransaction();
@@ -66,6 +83,7 @@ describe('MenstrualPeriodController', () => {
                 MenstrualPeriodModule,
                 DatabaseModule,
                 AuthModule,
+                ProfileModule,
             ],
         }).compile();
 
@@ -89,6 +107,22 @@ describe('MenstrualPeriodController', () => {
             .expect(HttpStatus.UNAUTHORIZED);
     });
 
+    it('should give not found when no menstrual periods exist and initial period date', async () => {
+        await request(app.getHttpServer())
+            .post('/auth/login')
+            .send({
+                password: testUser.password,
+                email: testUser.email,
+            })
+            .expect(HttpStatus.CREATED)
+            .then(async (result) => {
+                await request(app.getHttpServer())
+                    .get('/menstrual-period/forecasting')
+                    .set('Authorization', `Bearer ${result.body.token.accessToken}`)
+                    .expect(HttpStatus.NOT_FOUND);
+            });
+    });
+
     it('should be able to get the last menstrual period if authenticated', async () => {
         await request(app.getHttpServer())
             .post('/auth/login')
@@ -102,7 +136,7 @@ describe('MenstrualPeriodController', () => {
                     await request(app.getHttpServer())
                         .post('/menstrual-period/date')
                         .set('Authorization', `Bearer ${result.body.token.accessToken}`)
-                        .send({ date: '2024-06-20' })
+                        .send({ date: now.toFormat('yyyy-MM-dd') })
                         .expect(HttpStatus.CREATED)
                 ).body.menstrualPeriodId;
 
@@ -116,6 +150,70 @@ describe('MenstrualPeriodController', () => {
             });
     });
 
+<<<<<<< HEAD
+=======
+    describe('forecasting menstrual period', () => {
+        /* beforeEach(async () => {
+            const queryRunner = dataSource.createQueryRunner();
+            await queryRunner.connect();
+            await queryRunner.startTransaction();
+            try {
+                const now = DateTime.now();
+                const menstrualPeriod = await queryRunner.manager.save(MenstrualPeriod, {
+                    startedAt: now.toFormat('yyyy-MM-dd'),
+                    lastDate: now.toFormat('yyyy-MM-dd'),
+                    userId: userResponse.id,
+                });
+
+                await queryRunner.manager.save(MenstrualPeriodDate, {
+                    date: now.toFormat('yyyy-MM-dd'),
+                    menstrualPeriodId: menstrualPeriod.id,
+                });
+
+                await queryRunner.commitTransaction();
+            } catch (err) {
+                await queryRunner.rollbackTransaction();
+                throw err;
+            } finally {
+                await queryRunner.release();
+            }
+        });*/
+
+        it('should be able to predict the next 12 menstrual periods if authenticated', async () => {
+            await request(app.getHttpServer())
+                .post('/auth/login')
+                .send({
+                    password: testUser.password,
+                    email: testUser.email,
+                })
+                .expect(HttpStatus.CREATED)
+                .then(async (result) => {
+                    const defaultCycle = 28;
+                    const now = DateTime.now();
+                    const mockDatesOFYear = [];
+                    for (let i = 0; i < 12; i++) {
+                        mockDatesOFYear.push(
+                            now.plus({ days: defaultCycle * i }).toFormat('yyyy-MM-dd'),
+                        );
+                    }
+                    const mockResult = {
+                        events: {
+                            menstrualPeriods: {
+                                days: mockDatesOFYear,
+                            },
+                        },
+                    };
+                    await request(app.getHttpServer())
+                        .get('/menstrual-period/forecasting')
+                        .set('Authorization', `Bearer ${result.body.token.accessToken}`)
+                        .expect((res) => {
+                            expect(res.body).toEqual(mockResult);
+                        });
+                });
+        });
+    });
+
+>>>>>>> 4a994b9 (integration test for cia-262)
     it('should not be able to get menstrual periods without authentication', async () => {
         await request(app.getHttpServer()).get('/menstrual-period').expect(HttpStatus.UNAUTHORIZED);
     });
@@ -150,10 +248,19 @@ describe('MenstrualPeriodController', () => {
             .then(async (result) => {
                 const firstDate = '2023-06-20';
                 const secondDate = '2024-05-20';
+<<<<<<< HEAD
+=======
+                await request(app.getHttpServer())
+                    .post('/menstrual-period/date')
+                    .set('Authorization', `Bearer ${result.body.token.accessToken}`)
+                    .send({ date: firstDate })
+                    .expect(HttpStatus.CREATED);
+>>>>>>> 4a994b9 (integration test for cia-262)
 
                 await request(app.getHttpServer())
                     .post('/menstrual-period/date')
                     .set('Authorization', `Bearer ${result.body.token.accessToken}`)
+<<<<<<< HEAD
                     .send({ date: firstDate })
                     .expect(HttpStatus.CREATED);
 
@@ -164,6 +271,12 @@ describe('MenstrualPeriodController', () => {
                     .expect(HttpStatus.CREATED);
 
                 await request(app.getHttpServer())
+=======
+                    .send({ date: secondDate })
+                    .expect(HttpStatus.CREATED);
+
+                await request(app.getHttpServer())
+>>>>>>> 4a994b9 (integration test for cia-262)
                     .get('/menstrual-period?year=2023&month=06')
                     .set('Authorization', `Bearer ${result.body.token.accessToken}`)
                     .expect(HttpStatus.OK)

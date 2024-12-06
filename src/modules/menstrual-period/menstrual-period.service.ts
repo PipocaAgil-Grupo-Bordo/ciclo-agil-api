@@ -6,6 +6,7 @@ import {
     CustomForbiddenException,
     CustomNotFoundException,
 } from '../../shared/exceptions/http-exception';
+import { ProfileRepository } from '../profile/profile.repository';
 import { CreateMenstrualPeriodDateDto } from './dtos/create-menstrual-date.dto';
 import { CreateMenstrualPeriodDto } from './dtos/create-menstrual-period.dto';
 import { MenstrualPeriod } from './entities/menstrual-period.entity';
@@ -17,6 +18,7 @@ export class MenstrualPeriodService {
     constructor(
         private menstrualPeriodRepository: MenstrualPeriodRepository,
         private menstrualPeriodDateRepository: MenstrualPeriodDateRepository,
+        private profileRepository: ProfileRepository,
     ) {}
 
     async create(body: CreateMenstrualPeriodDto, userId: number) {
@@ -24,7 +26,7 @@ export class MenstrualPeriodService {
         return this.menstrualPeriodRepository.save(menstrualPeriod);
     }
 
-    async getByDate(userId: number, year: string, month?: string) {
+    async getByDate(userId: number, year?: string, month?: string) {
         return this.menstrualPeriodRepository.getMenstrualPeriods(userId, year, month);
     }
 
@@ -142,17 +144,6 @@ export class MenstrualPeriodService {
         return new Date(date.getTime() + date.getTimezoneOffset() * 60000);
     }
 
-<<<<<<< HEAD
-    differenceDate(dateFirst: MenstrualPeriod, dateSecond: MenstrualPeriod) {
-        const date1 = new Date(dateFirst.startedAt);
-        const date2 = new Date(dateSecond.startedAt);
-        const timeDiff = Math.abs(date2.getTime() - date1.getTime());
-        const diffDays = Math.ceil(timeDiff / (1000 * 3600 * 24));
-        return diffDays;
-    }
-
-=======
->>>>>>> 4baa72f (finalized task for code review)
     async deleteDate(id: number, userId: number) {
         const existsDate = await this.menstrualPeriodDateRepository.findOneBy({
             id,
@@ -182,27 +173,16 @@ export class MenstrualPeriodService {
             code: 'success',
         };
     }
-<<<<<<< HEAD
-=======
 
     async resolveCycleDuration(
-        menstrualCycleDuration: number,
+        userMenstrualCycleDuration: number | null,
         menstrualPerioDates: Date[],
-        isMenstrualCycleRegular: boolean,
     ) {
         const defaultCycle = 28;
-        if (isMenstrualCycleRegular) {
-            if (menstrualCycleDuration === null) {
-                return defaultCycle;
-            } else {
-                return menstrualCycleDuration;
-            }
-        }
+        const menstrualCycleDuration = userMenstrualCycleDuration ?? defaultCycle;
+
         if (menstrualPerioDates.length === 1) {
-            throw new CustomNotFoundException({
-                code: 'not-data-enough',
-                message: 'not there is data enough',
-            });
+            return menstrualCycleDuration;
         }
 
         if (menstrualPerioDates.length === 2) {
@@ -211,7 +191,7 @@ export class MenstrualPeriodService {
 
             const differenceDate = fistDate.diff(secondDate);
 
-            return (differenceDate.days + defaultCycle + defaultCycle) / 3;
+            return (differenceDate.days + menstrualCycleDuration + menstrualCycleDuration) / 3;
         }
 
         if (menstrualPerioDates.length === 3) {
@@ -222,7 +202,9 @@ export class MenstrualPeriodService {
             const differenceDateFirst = fistDate.diff(secondDate, ['days']);
             const differenceDateSecond = secondDate.diff(thirdDate, ['days']);
 
-            return (differenceDateFirst.days + differenceDateSecond.days + defaultCycle) / 3;
+            return (
+                (differenceDateFirst.days + differenceDateSecond.days + menstrualCycleDuration) / 3
+            );
         }
         const fistDate = DateTime.fromISO(menstrualPerioDates[0].toString());
         const secondDate = DateTime.fromISO(menstrualPerioDates[1].toString());
@@ -238,18 +220,7 @@ export class MenstrualPeriodService {
         );
     }
 
-    async resolveGetDatesPeriodMenstrualDatabase(userId: number, isMenstrualCycleRegular: boolean) {
-        if (isMenstrualCycleRegular) {
-            return await this.menstrualPeriodRepository.find({
-                where: {
-                    userId: userId,
-                },
-                order: {
-                    startedAt: 'DESC',
-                },
-                take: 1,
-            });
-        }
+    async getMenstrualPeriods(userId: number) {
         return await this.menstrualPeriodRepository.find({
             where: {
                 userId: userId,
@@ -262,30 +233,27 @@ export class MenstrualPeriodService {
     }
 
     async getForecasting(userId: number) {
-        const profileUser = await this.profileRepository.findBy({ id: userId });
-        const menstrualPeriod = await this.resolveGetDatesPeriodMenstrualDatabase(
-            userId,
-            profileUser[0].isMenstrualCycleRegular,
-        );
-        const startedAtCollection = menstrualPeriod.map((menstrualPeriodInteration) => {
+        const userProfile = await this.profileRepository.find({ where: { userId: userId } });
+        const menstrualPeriods = await this.getMenstrualPeriods(userId);
+        const startedAtCollection = menstrualPeriods.map((menstrualPeriodInteration) => {
             return menstrualPeriodInteration.startedAt;
         });
-        if (profileUser[0].initialPeriodDate === null && startedAtCollection.length === 0) {
-            throw new CustomConflictException({
-                code: 'initial-period-date',
+
+        if (startedAtCollection.length === 0 && userProfile[0].initialPeriodDate === null) {
+            throw new CustomNotFoundException({
+                code: 'no-initial-period-date',
                 message: 'there is no date',
             });
         }
 
-        if (startedAtCollection.length < 4 && profileUser[0].initialPeriodDate !== null) {
-            startedAtCollection.push(profileUser[0].initialPeriodDate);
+        if (startedAtCollection.length < 4 && userProfile[0].initialPeriodDate !== null) {
+            startedAtCollection.push(userProfile[0].initialPeriodDate);
         }
 
         const durationCycle = Math.floor(
             await this.resolveCycleDuration(
-                profileUser[0].menstrualCycleDuration,
+                userProfile[0].menstrualCycleDuration,
                 startedAtCollection,
-                profileUser[0].isMenstrualCycleRegular,
             ),
         );
 
@@ -301,11 +269,10 @@ export class MenstrualPeriodService {
 
         return {
             events: {
-                periodMenstrual: {
+                menstrualPeriods: {
                     days: datesForescastingOfYear,
                 },
             },
         };
     }
->>>>>>> 4baa72f (finalized task for code review)
 }
