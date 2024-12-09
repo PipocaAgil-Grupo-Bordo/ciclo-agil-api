@@ -8,8 +8,7 @@ import {
 @ValidatorConstraint({ name: 'passwordStrength', async: false })
 export class PasswordStrengthConstraint implements ValidatorConstraintInterface {
     validate(password: string) {
-        const regex =
-            /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*()_+{}\[\]:;<>,.?~/\\=-]).{8,}$/;
+        const regex = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*()_+{}[\]:;<>,.?~/\\=-]).{8,}$/;
         return regex.test(password);
     }
 

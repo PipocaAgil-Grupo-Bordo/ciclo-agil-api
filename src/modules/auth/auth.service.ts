@@ -69,7 +69,7 @@ export class AuthService {
 
         const decodeResponse = this.tokenService.decode(accessToken);
 
-        if(!decodeResponse || !decodeResponse.sub) {
+        if (!decodeResponse || !decodeResponse.sub) {
             throw new CustomForbiddenException({
                 code: 'invalid-refresh-token',
                 message: 'Invalid refresh token',

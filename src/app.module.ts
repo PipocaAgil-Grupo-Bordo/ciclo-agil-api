@@ -9,18 +9,18 @@ import { UserModule } from './modules/user/user.module';
 import { VerificationCodeModule } from './modules/verification-code/verification-code.module';
 
 @Module({
-  imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-    }),
-    DatabaseModule,
-    UserModule,
-    AuthModule,
-    VerificationCodeModule,
-    MenstrualPeriodModule,
-    ProfileModule,
-  ],
-  controllers: [],
-  providers: [DatabaseSeederService],
+    imports: [
+        ConfigModule.forRoot({
+            isGlobal: true,
+        }),
+        DatabaseModule,
+        UserModule,
+        AuthModule,
+        VerificationCodeModule,
+        MenstrualPeriodModule,
+        ProfileModule,
+    ],
+    controllers: [],
+    providers: [DatabaseSeederService],
 })
 export class AppModule {}
