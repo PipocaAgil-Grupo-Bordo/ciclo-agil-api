@@ -42,6 +42,8 @@ export class MenstrualPeriodService {
     }
 
     async createDate(body: CreateMenstrualPeriodDateDto, userId: number) {
+        //TODO: add validation to not allow duplicated dates for the same user.
+
         let shouldCreateMenstrualPeriod = false;
         let menstrualPeriodId: number;
         const bodyDate = parseISO(body.date);
@@ -180,7 +182,6 @@ export class MenstrualPeriodService {
     ) {
         const defaultCycle = 28;
         const menstrualCycleDuration = userMenstrualCycleDuration ?? defaultCycle;
-
         if (menstrualPerioDates.length === 1) {
             return menstrualCycleDuration;
         }
