@@ -10,6 +10,8 @@ import { AuthModule } from '../auth/auth.module';
 import { Profile } from '../profile/entities/profile.entity';
 import { ProfileModule } from '../profile/profile.module';
 import { User } from '../user/entities/user.entity';
+import { MenstrualPeriodDate } from './entities/menstrual-period-date.entity';
+import { MenstrualPeriod } from './entities/menstrual-period.entity';
 import { MenstrualPeriodModule } from './menstrual-period.module';
 
 describe('MenstrualPeriodController', () => {
@@ -118,35 +120,8 @@ describe('MenstrualPeriodController', () => {
             });
     });
 
-    it('should be able to get the last menstrual period if authenticated', async () => {
-        await request(app.getHttpServer())
-            .post('/auth/login')
-            .send({
-                password: testUser.password,
-                email: testUser.email,
-            })
-            .expect(HttpStatus.CREATED)
-            .then(async (result) => {
-                const periodId = (
-                    await request(app.getHttpServer())
-                        .post('/menstrual-period/date')
-                        .set('Authorization', `Bearer ${result.body.token.accessToken}`)
-                        .send({ date: now.toFormat('yyyy-MM-dd') })
-                        .expect(HttpStatus.CREATED)
-                ).body.menstrualPeriodId;
-
-                await request(app.getHttpServer())
-                    .get('/menstrual-period/last')
-                    .set('Authorization', `Bearer ${result.body.token.accessToken}`)
-                    .expect(HttpStatus.OK)
-                    .expect((res) => {
-                        expect(res.body.id).toBe(periodId);
-                    });
-            });
-    });
-
     describe('forecasting menstrual period', () => {
-        /* beforeEach(async () => {
+        beforeEach(async () => {
             const queryRunner = dataSource.createQueryRunner();
             await queryRunner.connect();
             await queryRunner.startTransaction();
@@ -170,7 +145,7 @@ describe('MenstrualPeriodController', () => {
             } finally {
                 await queryRunner.release();
             }
-        });*/
+        });
 
         it('should be able to predict the next 12 menstrual periods if authenticated', async () => {
             await request(app.getHttpServer())
@@ -204,6 +179,33 @@ describe('MenstrualPeriodController', () => {
                         });
                 });
         });
+    });
+
+    it('should be able to get the last menstrual period if authenticated', async () => {
+        await request(app.getHttpServer())
+            .post('/auth/login')
+            .send({
+                password: testUser.password,
+                email: testUser.email,
+            })
+            .expect(HttpStatus.CREATED)
+            .then(async (result) => {
+                const periodId = (
+                    await request(app.getHttpServer())
+                        .post('/menstrual-period/date')
+                        .set('Authorization', `Bearer ${result.body.token.accessToken}`)
+                        .send({ date: now.toFormat('yyyy-MM-dd') })
+                        .expect(HttpStatus.CREATED)
+                ).body.menstrualPeriodId;
+
+                await request(app.getHttpServer())
+                    .get('/menstrual-period/last')
+                    .set('Authorization', `Bearer ${result.body.token.accessToken}`)
+                    .expect(HttpStatus.OK)
+                    .expect((res) => {
+                        expect(res.body.id).toBe(periodId);
+                    });
+            });
     });
 
     it('should not be able to get menstrual periods without authentication', async () => {
