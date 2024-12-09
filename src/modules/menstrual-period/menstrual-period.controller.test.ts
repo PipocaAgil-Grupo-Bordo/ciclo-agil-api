@@ -2,6 +2,7 @@ import { HttpStatus, INestApplication, ValidationPipe } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { hash } from 'bcrypt';
+import { DateTime } from 'luxon';
 import * as request from 'supertest';
 import { DataSource } from 'typeorm';
 import { DatabaseModule } from '../../database/database.module';
@@ -12,7 +13,6 @@ import { User } from '../user/entities/user.entity';
 import { MenstrualPeriodDate } from './entities/menstrual-period-date.entity';
 import { MenstrualPeriod } from './entities/menstrual-period.entity';
 import { MenstrualPeriodModule } from './menstrual-period.module';
-import { DateTime } from 'luxon';
 
 describe('MenstrualPeriodController', () => {
     let app: INestApplication;
@@ -35,11 +35,9 @@ describe('MenstrualPeriodController', () => {
         try {
             await queryRunner.query('SET CONSTRAINTS ALL DEFERRED');
             await queryRunner.query('TRUNCATE TABLE "menstrual_period" CASCADE');
-<<<<<<< HEAD
-=======
             await queryRunner.query('TRUNCATE TABLE "profile" CASCADE');
->>>>>>> 4a994b9 (integration test for cia-262)
             await queryRunner.query('TRUNCATE TABLE "user" CASCADE');
+
             await queryRunner.commitTransaction();
         } catch (err) {
             await queryRunner.rollbackTransaction();
@@ -60,14 +58,11 @@ describe('MenstrualPeriodController', () => {
                 password: hashedPassword,
             });
 
-<<<<<<< HEAD
-=======
             await queryRunner.manager.save(Profile, {
                 userId: userResponse.id,
                 initialPeriodDate: null,
             });
 
->>>>>>> 4a994b9 (integration test for cia-262)
             await queryRunner.commitTransaction();
         } catch (err) {
             await queryRunner.rollbackTransaction();
@@ -126,8 +121,6 @@ describe('MenstrualPeriodController', () => {
             });
     });
 
-<<<<<<< HEAD
-=======
     describe('forecasting menstrual period', () => {
         beforeEach(async () => {
             const queryRunner = dataSource.createQueryRunner();
@@ -216,7 +209,6 @@ describe('MenstrualPeriodController', () => {
             });
     });
 
->>>>>>> 4a994b9 (integration test for cia-262)
     it('should not be able to get menstrual periods without authentication', async () => {
         await request(app.getHttpServer()).get('/menstrual-period').expect(HttpStatus.UNAUTHORIZED);
     });
@@ -251,19 +243,16 @@ describe('MenstrualPeriodController', () => {
             .then(async (result) => {
                 const firstDate = '2023-06-20';
                 const secondDate = '2024-05-20';
-<<<<<<< HEAD
-=======
+
                 await request(app.getHttpServer())
                     .post('/menstrual-period/date')
                     .set('Authorization', `Bearer ${result.body.token.accessToken}`)
                     .send({ date: firstDate })
                     .expect(HttpStatus.CREATED);
->>>>>>> 4a994b9 (integration test for cia-262)
 
                 await request(app.getHttpServer())
                     .post('/menstrual-period/date')
                     .set('Authorization', `Bearer ${result.body.token.accessToken}`)
-<<<<<<< HEAD
                     .send({ date: firstDate })
                     .expect(HttpStatus.CREATED);
 
@@ -274,12 +263,12 @@ describe('MenstrualPeriodController', () => {
                     .expect(HttpStatus.CREATED);
 
                 await request(app.getHttpServer())
-=======
+                    .post('/menstrual-period/date')
+                    .set('Authorization', `Bearer ${result.body.token.accessToken}`)
                     .send({ date: secondDate })
                     .expect(HttpStatus.CREATED);
 
                 await request(app.getHttpServer())
->>>>>>> 4a994b9 (integration test for cia-262)
                     .get('/menstrual-period?year=2023&month=06')
                     .set('Authorization', `Bearer ${result.body.token.accessToken}`)
                     .expect(HttpStatus.OK)
