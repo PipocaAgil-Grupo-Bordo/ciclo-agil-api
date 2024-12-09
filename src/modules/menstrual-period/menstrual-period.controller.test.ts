@@ -181,6 +181,7 @@ describe('MenstrualPeriodController', () => {
         });
     });
 
+    //TODO: improve tests avoiding to insert duplicated dates using 'now' since it was already inserted in previous tests.
     it('should be able to get the last menstrual period if authenticated', async () => {
         await request(app.getHttpServer())
             .post('/auth/login')
