@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Patch, Request, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpStatus, Patch, Request, Res, UseGuards } from '@nestjs/common';
+import { Response } from 'express';
 import { AuthGuard } from '@nestjs/passport';
 import { UpdateProfileDto } from './dtos/update-profile.dto';
 import { ProfileService } from './profile.service';
@@ -10,9 +11,15 @@ export class ProfileController {
 
     @Patch()
     @UseGuards(AuthGuard('jwt'))
-    upsert(@Request() req, @Body() body: UpdateProfileDto) {
+    async upsert(@Request() req, @Body() body: UpdateProfileDto, @Res() res: Response) {
         const user = req.user;
-        return this.profileService.upsert(body, user.id);
+
+        if (!body || Object.keys(body).length === 0) {
+            return res.status(HttpStatus.NO_CONTENT).send();
+        }
+
+        const result = await this.profileService.upsert(body, user.id);
+        res.json(result);
     }
 
     @Get()
