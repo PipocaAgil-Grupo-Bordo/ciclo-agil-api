@@ -267,6 +267,7 @@ export class MenstrualPeriodService {
                     .toFormat('yyyy-MM-dd'),
             );
         }
+        console.log('test');
 
         return {
             events: {
