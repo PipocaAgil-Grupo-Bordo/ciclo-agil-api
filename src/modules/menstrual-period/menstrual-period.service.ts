@@ -242,7 +242,7 @@ export class MenstrualPeriodService {
 
         if (startedAtCollection.length === 0 && userProfile[0].initialPeriodDate === null) {
             throw new CustomNotFoundException({
-                code: 'no-initial-period-date',
+                code: 'not-enouch-data',
                 message: 'there is no date',
             });
         }
@@ -260,7 +260,7 @@ export class MenstrualPeriodService {
 
         const datesForescastingOfYear = [];
 
-        for (let i = 0; i < 12; i++) {
+        for (let i = 1; i < 13; i++) {
             datesForescastingOfYear.push(
                 DateTime.fromISO(startedAtCollection[0].toString())
                     .plus({ days: durationCycle * i })
