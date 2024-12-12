@@ -267,7 +267,7 @@ export class MenstrualPeriodService {
                     .toFormat('yyyy-MM-dd'),
             );
         }
-        console.log('ola mundo');
+
         return {
             events: {
                 menstrualPeriods: {
