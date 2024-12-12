@@ -241,8 +241,8 @@ export class MenstrualPeriodService {
 
         if (startedAtCollection.length === 0 && userProfile[0].initialPeriodDate === null) {
             throw new CustomNotFoundException({
-                code: 'not-enough-data',
-                message: 'There is not enough data to forecast the next menstrual periods',
+                code: 'no-enough-date',
+                message: 'there is no date',
             });
         }
 
