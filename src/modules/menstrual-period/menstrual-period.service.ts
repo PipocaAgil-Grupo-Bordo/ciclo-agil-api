@@ -178,7 +178,7 @@ export class MenstrualPeriodService {
 
     async resolveCycleDuration(
         userMenstrualCycleDuration: number | null,
-        menstrualPerioDates: Date[],
+        menstrualPerioDates: any,
     ) {
         const defaultCycle = 28;
         const menstrualCycleDuration = userMenstrualCycleDuration ?? defaultCycle;
