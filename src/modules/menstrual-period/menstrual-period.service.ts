@@ -178,7 +178,7 @@ export class MenstrualPeriodService {
 
     async resolveCycleDuration(
         userMenstrualCycleDuration: number | null,
-        menstrualPerioDates: Date[],
+        menstrualPerioDates: any,
     ) {
         const defaultCycle = 28;
         const menstrualCycleDuration = userMenstrualCycleDuration ?? defaultCycle;
@@ -190,8 +190,7 @@ export class MenstrualPeriodService {
             const fistDate = DateTime.fromISO(menstrualPerioDates[0].toString());
             const secondDate = DateTime.fromISO(menstrualPerioDates[1].toString());
 
-            const differenceDate = fistDate.diff(secondDate);
-
+            const differenceDate = fistDate.diff(secondDate, ['days']);
             return (differenceDate.days + menstrualCycleDuration + menstrualCycleDuration) / 3;
         }
 
