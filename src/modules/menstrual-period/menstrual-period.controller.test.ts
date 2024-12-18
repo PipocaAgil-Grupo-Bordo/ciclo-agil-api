@@ -125,33 +125,6 @@ describe('MenstrualPeriodController', () => {
         const randomNumber = Math.floor(getRandomNumber(15, 40));
         const randomNumber2 = Math.floor(getRandomNumber(15, 40));
         const randomNumber3 = Math.floor(getRandomNumber(15, 40));
-        /*
-        beforeEach(async () => {
-            /*const queryRunner = dataSource.createQueryRunner();
-            await queryRunner.connect();
-            await queryRunner.startTransaction();
-            try {
-                const now = DateTime.now();
-                const menstrualPeriod = await queryRunner.manager.save(MenstrualPeriod, {
-                    startedAt: now.toFormat('yyyy-MM-dd'),
-                    lastDate: now.toFormat('yyyy-MM-dd'),
-                    userId: userResponse.id,
-                });
-
-                await queryRunner.manager.save(MenstrualPeriodDate, {
-                    date: now.toFormat('yyyy-MM-dd'),
-                    menstrualPeriodId: menstrualPeriod.id,
-                });
-
-                await queryRunner.commitTransaction();
-            } catch (err) {
-                await queryRunner.rollbackTransaction();
-                throw err;
-            } finally {
-                await queryRunner.release();
-            }
-        });
-*/
 
         it('should be able to predict the next 12 menstrual periods if authenticated with one date', async () => {
             await request(app.getHttpServer())
@@ -247,6 +220,62 @@ describe('MenstrualPeriodController', () => {
                 .then(async (result) => {
                     const now = DateTime.now();
                     const defaultCycle = 28;
+                    const cycleDuration = Math.floor(
+                        (randomNumber + randomNumber2 + defaultCycle) / 3,
+                    );
+                    const mockDatesOFYear = [];
+                    for (let i = 1; i < 13; i++) {
+                        mockDatesOFYear.push(
+                            now.plus({ days: cycleDuration * i }).toFormat('yyyy-MM-dd'),
+                        );
+                    }
+                    const mockResult = {
+                        events: {
+                            menstrualPeriods: {
+                                days: mockDatesOFYear,
+                            },
+                        },
+                    };
+
+                    await request(app.getHttpServer())
+                        .post('/menstrual-period/date')
+                        .set('Authorization', `Bearer ${result.body.token.accessToken}`)
+                        .send({
+                            date: now
+                                .minus({ days: randomNumber + randomNumber2 })
+                                .toFormat('yyyy-MM-dd'),
+                        })
+                        .expect(HttpStatus.CREATED);
+
+                    await request(app.getHttpServer())
+                        .get('/menstrual-period/forecasting')
+                        .set('Authorization', `Bearer ${result.body.token.accessToken}`)
+                        .expect((res) => {
+                            expect(res.body).toEqual(mockResult);
+                        });
+                });
+        });
+
+        it('should be able to predict the next 12 menstrual periods if authenticated with three dates', async () => {
+            await request(app.getHttpServer())
+                .post('/auth/login')
+                .send({
+                    password: testUser.password,
+                    email: testUser.email,
+                })
+                .expect(HttpStatus.CREATED)
+                .then(async (result) => {
+                    const now = DateTime.now();
+                    const defaultCycle = Math.floor(getRandomNumber(15, 40));
+
+                    await request(app.getHttpServer())
+                        .patch('/profile/')
+                        .set('Authorization', `Bearer ${result.body.token.accessToken}`)
+                        .send({
+                            menstrualCycleDuration: defaultCycle,
+                        })
+                        .expect(HttpStatus.OK);
+
                     const cycleDuration = Math.floor(
                         (randomNumber + randomNumber2 + defaultCycle) / 3,
                     );

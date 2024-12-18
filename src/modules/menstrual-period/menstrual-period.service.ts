@@ -178,7 +178,7 @@ export class MenstrualPeriodService {
 
     async resolveCycleDuration(
         userMenstrualCycleDuration: number | null,
-        menstrualPerioDates: any,
+        menstrualPerioDates: Date[],
     ) {
         const defaultCycle = 28;
         const menstrualCycleDuration = userMenstrualCycleDuration ?? defaultCycle;
@@ -241,7 +241,7 @@ export class MenstrualPeriodService {
 
         if (startedAtCollection.length === 0 && userProfile[0].initialPeriodDate === null) {
             throw new CustomNotFoundException({
-                code: 'not-enouch-data',
+                code: 'not-enough-data',
                 message: 'there is no date',
             });
         }
