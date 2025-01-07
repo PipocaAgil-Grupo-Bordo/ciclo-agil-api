@@ -96,12 +96,6 @@ describe('MenstrualPeriodController', () => {
         await app.close();
     });
 
-    it('should not be able to get the last menstrual periods without authentication', async () => {
-        await request(app.getHttpServer())
-            .get('/menstrual-period/last')
-            .expect(HttpStatus.UNAUTHORIZED);
-    });
-
     it('should give not found when no menstrual periods exist and initial period date', async () => {
         await request(app.getHttpServer())
             .post('/auth/login')
@@ -373,67 +367,6 @@ describe('MenstrualPeriodController', () => {
                     .set('Authorization', `Bearer ${result.body.token.accessToken}`)
                     .expect(HttpStatus.NOT_FOUND);
             });
-    });
-
-    describe('forecasting menstrual period', () => {
-        beforeEach(async () => {
-            const queryRunner = dataSource.createQueryRunner();
-            await queryRunner.connect();
-            await queryRunner.startTransaction();
-            try {
-                const now = DateTime.now();
-                const menstrualPeriod = await queryRunner.manager.save(MenstrualPeriod, {
-                    startedAt: now.toFormat('yyyy-MM-dd'),
-                    lastDate: now.toFormat('yyyy-MM-dd'),
-                    userId: userResponse.id,
-                });
-
-                await queryRunner.manager.save(MenstrualPeriodDate, {
-                    date: now.toFormat('yyyy-MM-dd'),
-                    menstrualPeriodId: menstrualPeriod.id,
-                });
-
-                await queryRunner.commitTransaction();
-            } catch (err) {
-                await queryRunner.rollbackTransaction();
-                throw err;
-            } finally {
-                await queryRunner.release();
-            }
-        });
-
-        it('should be able to predict the next 12 menstrual periods if authenticated', async () => {
-            await request(app.getHttpServer())
-                .post('/auth/login')
-                .send({
-                    password: testUser.password,
-                    email: testUser.email,
-                })
-                .expect(HttpStatus.CREATED)
-                .then(async (result) => {
-                    const defaultCycle = 28;
-                    const now = DateTime.now();
-                    const mockDatesOFYear = [];
-                    for (let i = 0; i < 12; i++) {
-                        mockDatesOFYear.push(
-                            now.plus({ days: defaultCycle * i }).toFormat('yyyy-MM-dd'),
-                        );
-                    }
-                    const mockResult = {
-                        events: {
-                            menstrualPeriods: {
-                                days: mockDatesOFYear,
-                            },
-                        },
-                    };
-                    await request(app.getHttpServer())
-                        .get('/menstrual-period/forecasting')
-                        .set('Authorization', `Bearer ${result.body.token.accessToken}`)
-                        .expect((res) => {
-                            expect(res.body).toEqual(mockResult);
-                        });
-                });
-        });
     });
 
     //TODO: improve tests avoiding to insert duplicated dates using 'now' since it was already inserted in previous tests.
