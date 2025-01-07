@@ -182,6 +182,7 @@ export class MenstrualPeriodService {
     ) {
         const defaultCycle = 28;
         const menstrualCycleDuration = userMenstrualCycleDuration ?? defaultCycle;
+
         if (menstrualPerioDates.length === 1) {
             return menstrualCycleDuration;
         }
