@@ -429,6 +429,18 @@ describe('MenstrualPeriodController', () => {
                 await request(app.getHttpServer())
                     .post('/menstrual-period/date')
                     .set('Authorization', `Bearer ${result.body.token.accessToken}`)
+                    .send({ date: firstDate })
+                    .expect(HttpStatus.CREATED);
+
+                await request(app.getHttpServer())
+                    .post('/menstrual-period/date')
+                    .set('Authorization', `Bearer ${result.body.token.accessToken}`)
+                    .send({ date: secondDate })
+                    .expect(HttpStatus.CREATED);
+
+                await request(app.getHttpServer())
+                    .post('/menstrual-period/date')
+                    .set('Authorization', `Bearer ${result.body.token.accessToken}`)
                     .send({ date: secondDate })
                     .expect(HttpStatus.CREATED);
 

@@ -8,30 +8,51 @@ This is the API for the Ciclo Ágil App.
 
 1. Clone the repository:
 
-```bash
-$ git clone https://github.com/PipocaAgil-Grupo-Bordo/pa-ciclo-bff.git
-$ cd pa-ciclo-bff
-```
+bash
+$ git clone https://github.com/PipocaAgil-Grupo-Bordo/ciclo-agil-api.git
+$ cd ciclo-agil-api
+
 2. Install dependencies:
 
-```bash
+bash
 $ npm install
-```
+
 
 ## Configuration
 
-Create a .env file and add the necessary environment variables. Check the .env.example
+1. Create a .env and a .env.test file and add the necessary environment variables. Check the .env.example
+
+2. Create a local database for development and a separate database for tests. After that, set the POSTGRES_URL variable in your env files.
+
+ps: If you are using docker, the database will be created after running docker-compose up. You can access it via pgAdmin on http://localhost:5050.
 
 ## Running the app
 
-```bash
+### Local Development
+bash
 # watch mode
 $ npm run dev
-```
+
+
+### Docker
+1. Build and start containers:
+
+bash
+$ docker-compose up
+
+
+2. Verify containers:
+
+bash
+$ docker-compose ps
+
+
+3. Access API: http://localhost:4444
+4. Access PGAdmin: http://localhost:5050
 
 ## Test
 
-```bash
+bash
 # unit tests
 $ npm run test
 
@@ -40,7 +61,7 @@ $ npm run test:e2e
 
 # test coverage
 $ npm run test:cov
-```
+
 
 ## Support
 

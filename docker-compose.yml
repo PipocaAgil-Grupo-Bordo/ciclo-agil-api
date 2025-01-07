@@ -1,0 +1,44 @@
+services:
+  db:
+    image: postgres:17-alpine
+    restart: always
+    shm_size: 128mb
+    environment:
+      POSTGRES_USER: cicloagil
+      POSTGRES_PASSWORD: cicloagil
+      POSTGRES_DB: cicloagil
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    user: postgres
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: app
+    command: >
+      sh -c "npm run migration:run && npm run dev"
+    environment:
+      - PORT=4444
+      - POSTGRES_URL=postgres://cicloagil:cicloagil@db:5432/cicloagil
+    ports:
+      - 4444:4444
+    depends_on:
+      - db
+    volumes:
+      - ./src:/app/src
+
+  pgadmin:
+    image: dpage/pgadmin4
+    restart: always
+    container_name: pgadmin
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=cicloagil@cicloagil.com.br
+      - PGADMIN_DEFAULT_PASSWORD=cicloagil
+    ports:
+      - 5050:80
+    depends_on:
+      - db
+
+volumes:
+  pg-data:

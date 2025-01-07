@@ -9,6 +9,7 @@ import { MenstrualPeriodDateRepository } from './menstrual-period-date.repositor
 import { MenstrualPeriodController } from './menstrual-period.controller';
 import { MenstrualPeriodRepository } from './menstrual-period.repository';
 import { MenstrualPeriodService } from './menstrual-period.service';
+import { MenstrualPeriodV2Controller } from './menstrual-period-v2.controller';
 
 @Module({
     imports: [
@@ -18,7 +19,7 @@ import { MenstrualPeriodService } from './menstrual-period.service';
         ProfileModule,
     ],
     exports: [MenstrualPeriodService],
-    controllers: [MenstrualPeriodController],
+    controllers: [MenstrualPeriodController, MenstrualPeriodV2Controller],
     providers: [
         MenstrualPeriodService,
         MenstrualPeriodRepository,

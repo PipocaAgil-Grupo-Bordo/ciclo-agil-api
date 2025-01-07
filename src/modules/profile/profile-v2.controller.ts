@@ -4,9 +4,8 @@ import { AuthGuard } from '@nestjs/passport';
 import { UpdateProfileDto } from './dtos/update-profile.dto';
 import { ProfileService } from './profile.service';
 
-//This controller will be replaced with the profile controller v2 but we'll keep this one for now
-@Controller('profile')
-export class ProfileController {
+@Controller('profiles')
+export class ProfileV2Controller {
     constructor(private readonly profileService: ProfileService) {}
 
     @Patch()
@@ -22,7 +21,7 @@ export class ProfileController {
         res.json(result);
     }
 
-    @Get()
+    @Get('my-profile')
     @UseGuards(AuthGuard('jwt'))
     async getProfile(@Request() req) {
         const user = req.user;
