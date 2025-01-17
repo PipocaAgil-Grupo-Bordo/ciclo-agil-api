@@ -2,16 +2,21 @@ import { HttpStatus, INestApplication, ValidationPipe } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { hash } from 'bcrypt';
+import { DateTime } from 'luxon';
 import * as request from 'supertest';
 import { DataSource } from 'typeorm';
 import { DatabaseModule } from '../../database/database.module';
 import { AuthModule } from '../auth/auth.module';
+import { Profile } from '../profile/entities/profile.entity';
+import { ProfileModule } from '../profile/profile.module';
 import { User } from '../user/entities/user.entity';
 import { MenstrualPeriodModule } from './menstrual-period.module';
 
-describe('UserController', () => {
+describe('MenstrualPeriodController', () => {
     let app: INestApplication;
     let dataSource: DataSource;
+
+    const now = DateTime.now();
 
     const testUser = {
         name: 'testuser',
@@ -19,6 +24,7 @@ describe('UserController', () => {
         email: 'testuser@example.com',
         birthday: '25/12/1995',
     };
+    let userResponse: User;
 
     const cleanDatabase = async () => {
         const queryRunner = dataSource.createQueryRunner();
@@ -27,6 +33,7 @@ describe('UserController', () => {
         try {
             await queryRunner.query('SET CONSTRAINTS ALL DEFERRED');
             await queryRunner.query('TRUNCATE TABLE "menstrual_period" CASCADE');
+            await queryRunner.query('TRUNCATE TABLE "profile" CASCADE');
             await queryRunner.query('TRUNCATE TABLE "user" CASCADE');
             await queryRunner.commitTransaction();
         } catch (err) {
@@ -43,9 +50,14 @@ describe('UserController', () => {
         try {
             const hashedPassword = await hash(testUser.password, 10);
 
-            await queryRunner.manager.save(User, {
+            userResponse = await queryRunner.manager.save(User, {
                 ...testUser,
                 password: hashedPassword,
+            });
+
+            await queryRunner.manager.save(Profile, {
+                userId: userResponse.id,
+                initialPeriodDate: null,
             });
 
             await queryRunner.commitTransaction();
@@ -66,6 +78,7 @@ describe('UserController', () => {
                 MenstrualPeriodModule,
                 DatabaseModule,
                 AuthModule,
+                ProfileModule,
             ],
         }).compile();
 
@@ -89,6 +102,263 @@ describe('UserController', () => {
             .expect(HttpStatus.UNAUTHORIZED);
     });
 
+    it('should give not found when no menstrual periods exist and initial period date', async () => {
+        await request(app.getHttpServer())
+            .post('/auth/login')
+            .send({
+                password: testUser.password,
+                email: testUser.email,
+            })
+            .expect(HttpStatus.CREATED)
+            .then(async (result) => {
+                await request(app.getHttpServer())
+                    .get('/menstrual-period/forecasting')
+                    .set('Authorization', `Bearer ${result.body.token.accessToken}`)
+                    .expect(HttpStatus.NOT_FOUND);
+            });
+    });
+
+    describe('forecasting menstrual period', () => {
+        const getRandomNumber = (min, max) => {
+            return Math.random() * (max - min) + min;
+        };
+        const randomNumber = Math.floor(getRandomNumber(15, 40));
+        const randomNumber2 = Math.floor(getRandomNumber(15, 40));
+        const randomNumber3 = Math.floor(getRandomNumber(15, 40));
+
+        it('should be able to predict the next 12 menstrual periods if authenticated with one date', async () => {
+            await request(app.getHttpServer())
+                .post('/auth/login')
+                .send({
+                    password: testUser.password,
+                    email: testUser.email,
+                })
+                .expect(HttpStatus.CREATED)
+                .then(async (result) => {
+                    const defaultCycle = 28;
+                    const now = DateTime.now();
+                    const mockDatesOFYear = [];
+                    for (let i = 1; i < 13; i++) {
+                        mockDatesOFYear.push(
+                            now.plus({ days: defaultCycle * i }).toFormat('yyyy-MM-dd'),
+                        );
+                    }
+                    const mockResult = {
+                        events: {
+                            menstrualPeriods: {
+                                days: mockDatesOFYear,
+                            },
+                        },
+                    };
+
+                    await request(app.getHttpServer())
+                        .post('/menstrual-period/date')
+                        .set('Authorization', `Bearer ${result.body.token.accessToken}`)
+                        .send({ date: now.toFormat('yyyy-MM-dd') })
+                        .expect(HttpStatus.CREATED);
+
+                    await request(app.getHttpServer())
+                        .get('/menstrual-period/forecasting')
+                        .set('Authorization', `Bearer ${result.body.token.accessToken}`)
+                        .expect((res) => {
+                            expect(res.body).toEqual(mockResult);
+                        });
+                });
+        });
+
+        it('should be able to predict the next 12 menstrual periods if authenticated with two dates', async () => {
+            await request(app.getHttpServer())
+                .post('/auth/login')
+                .send({
+                    password: testUser.password,
+                    email: testUser.email,
+                })
+                .expect(HttpStatus.CREATED)
+                .then(async (result) => {
+                    const defaultCycle = 28;
+                    const now = DateTime.now();
+                    const cycleDuration = Math.floor(
+                        (randomNumber + defaultCycle + defaultCycle) / 3,
+                    );
+                    const mockDatesOFYear = [];
+                    for (let i = 1; i < 13; i++) {
+                        mockDatesOFYear.push(
+                            now.plus({ days: cycleDuration * i }).toFormat('yyyy-MM-dd'),
+                        );
+                    }
+                    const mockResult = {
+                        events: {
+                            menstrualPeriods: {
+                                days: mockDatesOFYear,
+                            },
+                        },
+                    };
+
+                    await request(app.getHttpServer())
+                        .post('/menstrual-period/date')
+                        .set('Authorization', `Bearer ${result.body.token.accessToken}`)
+                        .send({ date: now.minus({ days: randomNumber }).toFormat('yyyy-MM-dd') })
+                        .expect(HttpStatus.CREATED);
+
+                    await request(app.getHttpServer())
+                        .get('/menstrual-period/forecasting')
+                        .set('Authorization', `Bearer ${result.body.token.accessToken}`)
+                        .expect((res) => {
+                            expect(res.body).toEqual(mockResult);
+                        });
+                });
+        });
+
+        it('should be able to predict the next 12 menstrual periods if authenticated with three dates', async () => {
+            await request(app.getHttpServer())
+                .post('/auth/login')
+                .send({
+                    password: testUser.password,
+                    email: testUser.email,
+                })
+                .expect(HttpStatus.CREATED)
+                .then(async (result) => {
+                    const now = DateTime.now();
+                    const defaultCycle = 28;
+                    const cycleDuration = Math.floor(
+                        (randomNumber + randomNumber2 + defaultCycle) / 3,
+                    );
+                    const mockDatesOFYear = [];
+                    for (let i = 1; i < 13; i++) {
+                        mockDatesOFYear.push(
+                            now.plus({ days: cycleDuration * i }).toFormat('yyyy-MM-dd'),
+                        );
+                    }
+                    const mockResult = {
+                        events: {
+                            menstrualPeriods: {
+                                days: mockDatesOFYear,
+                            },
+                        },
+                    };
+
+                    await request(app.getHttpServer())
+                        .post('/menstrual-period/date')
+                        .set('Authorization', `Bearer ${result.body.token.accessToken}`)
+                        .send({
+                            date: now
+                                .minus({ days: randomNumber + randomNumber2 })
+                                .toFormat('yyyy-MM-dd'),
+                        })
+                        .expect(HttpStatus.CREATED);
+
+                    await request(app.getHttpServer())
+                        .get('/menstrual-period/forecasting')
+                        .set('Authorization', `Bearer ${result.body.token.accessToken}`)
+                        .expect((res) => {
+                            expect(res.body).toEqual(mockResult);
+                        });
+                });
+        });
+
+        it('should be able to predict the next 12 menstrual periods if authenticated with three dates', async () => {
+            await request(app.getHttpServer())
+                .post('/auth/login')
+                .send({
+                    password: testUser.password,
+                    email: testUser.email,
+                })
+                .expect(HttpStatus.CREATED)
+                .then(async (result) => {
+                    const now = DateTime.now();
+                    const defaultCycle = Math.floor(getRandomNumber(15, 40));
+
+                    await request(app.getHttpServer())
+                        .patch('/profile/')
+                        .set('Authorization', `Bearer ${result.body.token.accessToken}`)
+                        .send({
+                            menstrualCycleDuration: defaultCycle,
+                        })
+                        .expect(HttpStatus.OK);
+
+                    const cycleDuration = Math.floor(
+                        (randomNumber + randomNumber2 + defaultCycle) / 3,
+                    );
+                    const mockDatesOFYear = [];
+                    for (let i = 1; i < 13; i++) {
+                        mockDatesOFYear.push(
+                            now.plus({ days: cycleDuration * i }).toFormat('yyyy-MM-dd'),
+                        );
+                    }
+                    const mockResult = {
+                        events: {
+                            menstrualPeriods: {
+                                days: mockDatesOFYear,
+                            },
+                        },
+                    };
+
+                    await request(app.getHttpServer())
+                        .post('/menstrual-period/date')
+                        .set('Authorization', `Bearer ${result.body.token.accessToken}`)
+                        .send({
+                            date: now
+                                .minus({ days: randomNumber + randomNumber2 })
+                                .toFormat('yyyy-MM-dd'),
+                        })
+                        .expect(HttpStatus.CREATED);
+
+                    await request(app.getHttpServer())
+                        .get('/menstrual-period/forecasting')
+                        .set('Authorization', `Bearer ${result.body.token.accessToken}`)
+                        .expect((res) => {
+                            expect(res.body).toEqual(mockResult);
+                        });
+                });
+        });
+
+        it('should be able to predict the next 12 menstrual periods if authenticated with four dates', async () => {
+            await request(app.getHttpServer())
+                .post('/auth/login')
+                .send({
+                    password: testUser.password,
+                    email: testUser.email,
+                })
+                .expect(HttpStatus.CREATED)
+                .then(async (result) => {
+                    const now = DateTime.now();
+                    const cycleDuration = Math.floor(
+                        (randomNumber + randomNumber2 + randomNumber3) / 3,
+                    );
+                    const mockDatesOFYear = [];
+                    for (let i = 1; i < 13; i++) {
+                        mockDatesOFYear.push(
+                            now.plus({ days: cycleDuration * i }).toFormat('yyyy-MM-dd'),
+                        );
+                    }
+                    const mockResult = {
+                        events: {
+                            menstrualPeriods: {
+                                days: mockDatesOFYear,
+                            },
+                        },
+                    };
+
+                    await request(app.getHttpServer())
+                        .post('/menstrual-period/date')
+                        .set('Authorization', `Bearer ${result.body.token.accessToken}`)
+                        .send({
+                            date: now
+                                .minus({ days: randomNumber + randomNumber2 + randomNumber3 })
+                                .toFormat('yyyy-MM-dd'),
+                        })
+                        .expect(HttpStatus.CREATED);
+
+                    await request(app.getHttpServer())
+                        .get('/menstrual-period/forecasting')
+                        .set('Authorization', `Bearer ${result.body.token.accessToken}`)
+                        .expect((res) => {
+                            expect(res.body).toEqual(mockResult);
+                        });
+                });
+        });
+    });
+
     it('should be able to get the last menstrual period if authenticated', async () => {
         await request(app.getHttpServer())
             .post('/auth/login')
@@ -102,7 +372,7 @@ describe('UserController', () => {
                     await request(app.getHttpServer())
                         .post('/menstrual-period/date')
                         .set('Authorization', `Bearer ${result.body.token.accessToken}`)
-                        .send({ date: '2024-06-20' })
+                        .send({ date: now.toFormat('yyyy-MM-dd') })
                         .expect(HttpStatus.CREATED)
                 ).body.menstrualPeriodId;
 
@@ -150,11 +420,22 @@ describe('UserController', () => {
             .then(async (result) => {
                 const firstDate = '2023-06-20';
                 const secondDate = '2024-05-20';
+                await request(app.getHttpServer())
+                    .post('/menstrual-period/date')
+                    .set('Authorization', `Bearer ${result.body.token.accessToken}`)
+                    .send({ date: firstDate })
+                    .expect(HttpStatus.CREATED);
 
                 await request(app.getHttpServer())
                     .post('/menstrual-period/date')
                     .set('Authorization', `Bearer ${result.body.token.accessToken}`)
                     .send({ date: firstDate })
+                    .expect(HttpStatus.CREATED);
+
+                await request(app.getHttpServer())
+                    .post('/menstrual-period/date')
+                    .set('Authorization', `Bearer ${result.body.token.accessToken}`)
+                    .send({ date: secondDate })
                     .expect(HttpStatus.CREATED);
 
                 await request(app.getHttpServer())

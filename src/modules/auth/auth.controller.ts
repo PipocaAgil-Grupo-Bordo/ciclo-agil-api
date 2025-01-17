@@ -15,6 +15,7 @@ export class AuthController {
         private readonly verificationCodeService: VerificationCodeService,
     ) {}
 
+    //TODO: Change the response http code to 200 OK
     @Post('login')
     login(@Body() body: LoginDto) {
         return this.authService.login(body);
