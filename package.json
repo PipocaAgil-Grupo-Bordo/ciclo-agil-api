@@ -44,6 +44,7 @@
     "date-fns": "^3.6.0",
     "deep-email-validator": "^0.1.21",
     "dotenv": "^16.4.5",
+    "googleapis": "^144.0.0",
     "js-yaml": "^4.1.0",
     "jsonwebtoken": "^9.0.2",
     "luxon": "^3.4.4",
