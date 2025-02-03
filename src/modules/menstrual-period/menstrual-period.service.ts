@@ -182,6 +182,7 @@ export class MenstrualPeriodService {
     ) {
         const defaultCycle = 28;
         const menstrualCycleDuration = userMenstrualCycleDuration ?? defaultCycle;
+
         if (menstrualPerioDates.length === 1) {
             return menstrualCycleDuration;
         }
@@ -242,7 +243,7 @@ export class MenstrualPeriodService {
         if (startedAtCollection.length === 0 && userProfile[0].initialPeriodDate === null) {
             throw new CustomNotFoundException({
                 code: 'not-enough-data',
-                message: 'there is no date',
+                message: 'There is not enough data to forecast the next menstrual periods',
             });
         }
 
