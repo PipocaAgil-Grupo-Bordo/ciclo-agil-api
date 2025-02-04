@@ -15,12 +15,21 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    restart: always
     container_name: app
-    command: >
-      sh -c "npm run migration:run && npm run dev"
+    command:
+      [
+        './wait-for-it.sh',
+        'db:5432',
+        '--strict',
+        '--timeout=300',
+        '--',
+        'sh',
+        '-c',
+        'npm run migration:run && npm run dev',
+      ]
     environment:
       - PORT=4444
-      - POSTGRES_URL=postgres://cicloagil:cicloagil@db:5432/cicloagil
     ports:
       - 4444:4444
     depends_on:
