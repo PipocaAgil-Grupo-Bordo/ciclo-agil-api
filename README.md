@@ -8,14 +8,16 @@ This is the API for the Ciclo Ágil App.
 
 1. Clone the repository:
 
-bash
+```bash
 $ git clone https://github.com/PipocaAgil-Grupo-Bordo/ciclo-agil-api.git
 $ cd ciclo-agil-api
+```
 
 2. Install dependencies:
 
-bash
+```bash
 $ npm install
+```
 
 
 ## Configuration
@@ -29,22 +31,25 @@ ps: If you are using docker, the database will be created after running docker-c
 ## Running the app
 
 ### Local Development
-bash
+```bash
 # watch mode
 $ npm run dev
+```
 
 
 ### Docker
 1. Build and start containers:
 
-bash
+```bash
 $ docker-compose up
+```
 
 
 2. Verify containers:
 
-bash
+```bash
 $ docker-compose ps
+```
 
 
 3. Access API: http://localhost:4444
@@ -52,9 +57,9 @@ $ docker-compose ps
 
 ## Test
 
-bash
-# unit tests
+```bash
 $ npm run test
+```
 
 
 ## Branches and commits
