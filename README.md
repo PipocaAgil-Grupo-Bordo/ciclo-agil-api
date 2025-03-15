@@ -56,16 +56,18 @@ bash
 # unit tests
 $ npm run test
 
-# e2e tests
-$ npm run test:e2e
 
-# test coverage
-$ npm run test:cov
+## Branches and commits
 
+For standardization purposes, branch names and commit messages must follow these patterns:
 
-## Support
+- Branch names must start with the ticket ID + a brief descriptive title (in English and lowercase).  
+  Example: cia-123-task-title;
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+- Commit messages should follow this pattern: [ticket_id] type: Commit Info.  
+  Example: [CIA-123] feat: Brief commit description.
+
+Note that the ticket ID must always be written in uppercase.
 
 ## License
 
