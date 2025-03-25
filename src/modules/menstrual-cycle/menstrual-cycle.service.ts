@@ -93,25 +93,27 @@ export class MenstrualCycleService {
             ),
         );
 
-        const datesForescastingOfYear = [];
+        const upcomingPeriods = [];
 
         for (let i = 1; i < 13; i++) {
-            datesForescastingOfYear.push(
+            upcomingPeriods.push(
                 DateTime.fromISO(startedAtCollection[0].toString())
                     .plus({ days: durationCycle * i })
                     .toFormat('yyyy-MM-dd'),
             );
         }
 
-        const datesForescastingOvulationOfYear = datesForescastingOfYear.map((date) => {
+        const upcomingOvulationDates = upcomingPeriods.map((date) => {
             return DateTime.fromISO(date).minus({ days: 14 }).toFormat('yyyy-MM-dd');
         });
 
         return {
             events: {
                 menstrualPeriods: {
-                    days: datesForescastingOfYear,
-                    ovulation: datesForescastingOvulationOfYear,
+                    days: upcomingPeriods,
+                },
+                ovulationDates: {
+                    days: upcomingOvulationDates,
                 },
             },
         };
