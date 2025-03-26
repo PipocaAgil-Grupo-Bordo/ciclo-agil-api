@@ -112,7 +112,7 @@ export class MenstrualCycleService {
                 menstrualPeriods: {
                     days: upcomingPeriods,
                 },
-                ovulationDates: {
+                ovulation: {
                     days: upcomingOvulationDates,
                 },
             },
