@@ -21,7 +21,6 @@ export class EmailService {
         );
 
         oauth2Client.setCredentials({ refresh_token: process.env.REFRESH_TOKEN });
-
         const acessToken = (await oauth2Client.getAccessToken()).token;
 
         const transport = nodemailer.createTransport({
