@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import emailValidator from 'deep-email-validator';
+import { google } from 'googleapis';
 import * as nodemailer from 'nodemailer';
 import { User } from '../../../modules/user/entities/user.entity';
 import { CustomInternalServerErrorException } from '../../exceptions/http-exception';
@@ -13,19 +14,27 @@ export class EmailService {
     }
 
     async sendVerificationCode(user: User, code: string) {
+        const oauth2Client = new google.auth.OAuth2(
+            process.env.ID_CLIENT,
+            process.env.SECRET_KEY,
+            process.env.HOST_PLAYGROUND,
+        );
+
+        oauth2Client.setCredentials({ refresh_token: process.env.REFRESH_TOKEN });
+        const acessToken = (await oauth2Client.getAccessToken()).token;
+
         const transport = nodemailer.createTransport({
-            host: process.env.EMAIL_HOST,
-            port: Number(process.env.EMAIL_PORT) || 0,
-            secure: false,
+            service: 'gmail',
             auth: {
+                type: 'OAuth2',
                 user: process.env.EMAIL_USERNAME,
-                pass: process.env.EMAIL_PASS,
+                accessToken: acessToken,
             },
         });
 
         return transport
             .sendMail({
-                from: 'Ciclo Ágil <cicloagil@outlook.com>',
+                from: `Ciclo Ágil <${process.env.EMAIL_USERNAME}>`,
                 to: user.email,
                 subject: 'Redefinição de senha',
                 html: `<!DOCTYPE html>
