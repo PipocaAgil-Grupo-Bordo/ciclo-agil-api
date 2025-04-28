@@ -1,10 +1,7 @@
 import { Inject, Injectable, forwardRef } from '@nestjs/common';
 import { DateTime } from 'luxon';
 import { MoreThanOrEqual } from 'typeorm';
-import {
-    CustomConflictException,
-    CustomNotFoundException,
-} from '../../shared/exceptions/http-exception';
+import { CustomNotFoundException } from '../../shared/exceptions/http-exception';
 import { UserService } from '../user/user.service';
 import { VerificationCodeRepository } from './verification-code.repository';
 
@@ -59,12 +56,7 @@ export class VerificationCodeService {
             },
         });
 
-        if (validCode === null) {
-            throw new CustomConflictException({
-                code: 'code-already-used',
-                message: 'This code has already been used',
-            });
-        } else {
+        if (validCode?.isUsed === false) {
             await this.markAsUsed(validCode.id);
         }
 
