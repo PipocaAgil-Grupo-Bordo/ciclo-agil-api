@@ -56,6 +56,10 @@ export class VerificationCodeService {
             },
         });
 
+        if (validCode?.isUsed === false) {
+            await this.markAsUsed(validCode.id);
+        }
+
         return {
             valid: validCode ? true : false,
             id: validCode?.id || undefined,
