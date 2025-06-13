@@ -1,7 +1,10 @@
 import { Inject, Injectable, forwardRef } from '@nestjs/common';
 import { DateTime } from 'luxon';
 import { MoreThanOrEqual } from 'typeorm';
-import { CustomNotFoundException } from '../../shared/exceptions/http-exception';
+import {
+    CustomInternalServerErrorException,
+    CustomNotFoundException,
+} from '../../shared/exceptions/http-exception';
 import { UserService } from '../user/user.service';
 import { VerificationCodeRepository } from './verification-code.repository';
 
@@ -13,8 +16,17 @@ export class VerificationCodeService {
         private readonly userService: UserService,
     ) {}
 
-    insert(code: string, email: string) {
+    async insert(code: string, email: string) {
         const expiresAt = DateTime.now().plus({ hours: 1 }).toJSDate().toISOString();
+
+        try {
+            await this.verificationCodeRepository.delete({ isUsed: false });
+        } catch {
+            throw new CustomInternalServerErrorException({
+                code: 'code-could-not-be-generated',
+                message: 'The verification code could not be generated',
+            });
+        }
 
         return this.verificationCodeRepository.save({ code, email, expiresAt });
     }
