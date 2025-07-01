@@ -1,6 +1,8 @@
-import { Body, Controller, Get, HttpStatus, Patch, Request, Res, UseGuards } from '@nestjs/common';
-import { Response } from 'express';
+import { Body, Controller, Get, HttpStatus, Patch, Res, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { Response } from 'express';
+import { CurrentUser } from '../../shared/decorators/current-user.decorator';
+import { AuthPayload } from '../../shared/types/auth-payload.interface';
 import { UpdateProfileDto } from './dtos/update-profile.dto';
 import { ProfileService } from './profile.service';
 
@@ -11,9 +13,11 @@ export class ProfileController {
 
     @Patch()
     @UseGuards(AuthGuard('jwt'))
-    async upsert(@Request() req, @Body() body: UpdateProfileDto, @Res() res: Response) {
-        const user = req.user;
-
+    async upsert(
+        @CurrentUser() user: AuthPayload,
+        @Body() body: UpdateProfileDto,
+        @Res() res: Response,
+    ) {
         if (!body || Object.keys(body).length === 0) {
             return res.status(HttpStatus.NO_CONTENT).send();
         }
@@ -24,8 +28,7 @@ export class ProfileController {
 
     @Get()
     @UseGuards(AuthGuard('jwt'))
-    async getProfile(@Request() req) {
-        const user = req.user;
+    async getProfile(@CurrentUser() user: AuthPayload) {
         return this.profileService.findOne(user.id);
     }
 }

@@ -7,6 +7,8 @@ import { RefreshTokenDto } from './dtos/refresh-token.dto';
 import { ResetPasswordRequestDto } from './dtos/reset-password-request.dto';
 import { ResetPasswordDto } from './dtos/reset-password.dto';
 import { VerificationCodeValidationDto } from './dtos/verification-code-validation.dto';
+import { CurrentUser } from '../../shared/decorators/current-user.decorator';
+import { AuthPayload } from '../../shared/types/auth-payload.interface';
 
 @Controller('auth')
 export class AuthController {
@@ -23,8 +25,7 @@ export class AuthController {
 
     @Get('whoami')
     @UseGuards(AuthGuard('jwt'))
-    whoami(@Request() req) {
-        const user = req.user;
+    whoami(@CurrentUser() user: AuthPayload) {
         return user;
     }
 

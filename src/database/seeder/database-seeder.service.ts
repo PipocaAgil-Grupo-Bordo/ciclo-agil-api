@@ -20,7 +20,7 @@ export class DatabaseSeederService implements OnModuleInit {
         const existingUser = await this.userService.findByEmail(newUser.email);
 
         if (!existingUser) {
-            this.userService.create(newUser);
+            await this.userService.create(newUser);
         }
     }
 }
