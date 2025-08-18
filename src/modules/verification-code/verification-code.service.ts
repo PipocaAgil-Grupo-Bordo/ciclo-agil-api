@@ -64,7 +64,6 @@ export class VerificationCodeService {
                 code,
                 email,
                 expiresAt: MoreThanOrEqual(new Date()),
-                isUsed: false,
             },
         });
 
