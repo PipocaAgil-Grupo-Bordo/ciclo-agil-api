@@ -91,18 +91,13 @@ export class AuthService {
     async requestPasswordReset(email: string) {
         const user = await this.userService.findByEmail(email);
 
-        if (!user) {
-            throw new CustomNotFoundException({
-                code: 'email-not-found',
-                message: 'Email not found',
-            });
+        if (user) {
+            const verificationCode = await this.verificationCodeService.generate();
+            if (process.env.NODE_ENV !== 'test') {
+                await this.emailService.sendVerificationCode(user, verificationCode);
+            }
+            await this.verificationCodeService.insert(verificationCode, email);
         }
-
-        const verificationCode = await this.verificationCodeService.generate();
-        if (process.env.NODE_ENV !== 'test') {
-            await this.emailService.sendVerificationCode(user, verificationCode);
-        }
-        await this.verificationCodeService.insert(verificationCode, email);
 
         return { message: `Verification code sent to ${email}` };
     }
